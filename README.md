@@ -1,0 +1,1 @@
+# IA-Leitura-de-Imagens
