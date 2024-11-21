@@ -65,41 +65,45 @@ def fix_dimension(img):
     return new_img
 
 def detectar_placa():
-    if panel.image:
-        imagem_cv = cv2.cvtColor(np.array(panel.image), cv2.COLOR_RGB2BGR)
-        gray = cv2.cvtColor(imagem_cv, cv2.COLOR_BGR2GRAY)
-        plates = plate_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    if 'original_image' not in globals():
+        print("Por favor, carregue uma imagem antes de detectar a placa.")
+        return
+
+    imagem_cv = original_image.copy()
+    gray = cv2.cvtColor(imagem_cv, cv2.COLOR_BGR2GRAY)
+    plates = plate_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    
+    for (x, y, w, h) in plates:
+        cv2.rectangle(imagem_cv, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        plate_img = imagem_cv[y:y+h, x:x+w]
+        characters = segment_characters(plate_img)
         
-        for (x, y, w, h) in plates:
-            cv2.rectangle(imagem_cv, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        plate_number = show_results(characters)
+        print(f"Número detectado: {plate_number}")
 
-            plate_img = imagem_cv[y:y+h, x:x+w]
-            characters = segment_characters(plate_img)
-            
-            plate_number = show_results(characters)
-            print(f"Número detectado: {plate_number}")
+        plt.figure(figsize=(10, 6))
+        for i, ch in enumerate(characters):
+            img = cv2.resize(ch, (28, 28), interpolation=cv2.INTER_AREA)
+            plt.subplot(3, 4, i + 1)
+            plt.imshow(img, cmap='gray')
+            plt.title(f'Caractere: {plate_number[i]}')
+            plt.axis('off')
+        plt.show()
 
-            plt.figure(figsize=(10, 6))
-            for i, ch in enumerate(characters):
-                img = cv2.resize(ch, (28, 28), interpolation=cv2.INTER_AREA)
-                plt.subplot(3, 4, i + 1)
-                plt.imshow(img, cmap='gray')
-                plt.title(f'Caractere: {plate_number[i]}')
-                plt.axis('off')
-            plt.show()
-
-        plate_image = Image.fromarray(imagem_cv)
-        plate_image = plate_image.resize((300, 300))
-        plate_image = ImageTk.PhotoImage(plate_image)
-        panel.config(image=plate_image)
-        panel.image = plate_image
+    plate_image = Image.fromarray(cv2.cvtColor(imagem_cv, cv2.COLOR_BGR2RGB))
+    plate_image = plate_image.resize((300, 300))
+    plate_image = ImageTk.PhotoImage(plate_image)
+    panel.config(image=plate_image)
+    panel.image = plate_image
 
 
 def carregar_imagem():
+    global original_image
     caminho_arquivo = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.bmp"), ("Todos os Arquivos", "*.*")])
     if caminho_arquivo:
-        imagem = cv2.imread(caminho_arquivo)
-        imagem = cv2.cvtColor(imagem, cv2.COLOR_BGR2RGB)
+        original_image = cv2.imread(caminho_arquivo)
+        imagem = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
         imagem = Image.fromarray(imagem)
         imagem = imagem.resize((300, 300))
         imagem = ImageTk.PhotoImage(imagem)
